@@ -9,24 +9,25 @@ class GaussianDiffusion:
     Reverse (sampling) comes later in train.py / sample.py.
     """
 
-    def __init__(
-        self,
-        timesteps: int = 1000,
-        schedule: str = "cosine",   # "cosine" | "linear"
-        device: str = "cpu",
-    ):
+    def __init__(self, timesteps: int = 1000, schedule: str = "cosine",   # "cosine" | "linear"
+        device: str = "cpu",):
+
         self.timesteps = timesteps
         self.device = device
 
         betas = self._make_schedule(timesteps, schedule)          # (T,)
         alphas = 1.0 - betas                                      # (T,)
         alphas_cumprod = torch.cumprod(alphas, dim=0)             # (T,)
+        alphas_cumprod_prev = torch.cat([torch.tensor([1.0]), alphas_cumprod[:-1]])
 
         # Pre-compute everything the training loop needs
         self.register(betas, "betas")
+        self.register(alphas, "alphas")
         self.register(alphas_cumprod, "alphas_cumprod")
+        self.register(alphas_cumprod_prev, "alphas_cumprod_prev")
         self.register(torch.sqrt(alphas_cumprod), "sqrt_alphas_cumprod")
         self.register(torch.sqrt(1.0 - alphas_cumprod), "sqrt_one_minus_alphas_cumprod")
+        self.register(torch.sqrt(1.0 / alphas), "sqrt_recip_alphas")
 
     # ------------------------------------------------------------------
     # Noise schedule
@@ -76,3 +77,59 @@ class GaussianDiffusion:
     def sample_timesteps(self, batch_size: int) -> torch.Tensor:
         """Uniform random timesteps for a training batch."""
         return torch.randint(0, self.timesteps, (batch_size,), device=self.device)
+    
+    @torch.no_grad()
+    def p_sample(self, model, x, t):
+        """
+        One reverse diffusion step.
+        """
+        betas_t = self.betas[t][:, None, None, None]
+
+        sqrt_one_minus_alpha_bar_t = (self.sqrt_one_minus_alphas_cumprod[t][:, None, None, None])
+        sqrt_recip_alpha_t = (self.sqrt_recip_alphas[t][:, None, None, None])
+
+        predicted_noise = model(x, t)
+
+        model_mean = (
+            sqrt_recip_alpha_t * (x - betas_t * predicted_noise / sqrt_one_minus_alpha_bar_t)
+        )
+
+        # last step → deterministic
+        if (t == 0).all():
+            return model_mean
+
+        noise = torch.randn_like(x)
+
+        return model_mean + torch.sqrt(betas_t) * noise
+    
+    @torch.no_grad()
+    def sample(
+        self,
+        model,
+        image_size=64,
+        batch_size=16,
+        channels=3
+    ):
+        """
+        Generate images from pure noise.
+        """
+
+        model.eval()
+
+        x = torch.randn(
+            batch_size,
+            channels,
+            image_size,
+            image_size,
+            device=self.device
+        )
+
+        for timestep in reversed(range(self.timesteps)):
+
+            t = torch.full((batch_size,), timestep,
+                device=self.device, dtype=torch.long
+            )
+
+            x = self.p_sample(model, x, t)
+
+        return x

@@ -1,10 +1,11 @@
 # Add Diffusion process (done)
 # Add Denoising process UNET (done)
 # Connect Diffusion and Denoising for training (done)
+# Add Generation pipeline (done)
+# Add Frechet Inception Distance & Inception Score & Average inference time for batch generation (done)
 
-# Optional: Improve training with EMA and diversity checks
-# Add Generation pipeline
-# Add Frechet Inception Distance & Inception Score & Average inference time for batch generation
+# (add multi checkpoint generation)
+# Optional: Improve training with EMA and diversity checks (samples every epoch)
 # latent space diffusion
 # Check speedup, visual quality and metrics for the accelerated version
 # Ablation study for varying sampling steps T = 1000 vs 100 or 10
@@ -126,8 +127,8 @@ def main():
         diffusion=diffusion,
         dataloader=dataloader,
         device=device,
-        epochs=3,
-        log_every=20,
+        epochs=200,
+        log_every=100,
         run_name=run_name,
         save_dir=save_dir,
         save_every_epochs=20
