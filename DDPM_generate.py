@@ -8,33 +8,21 @@ from torchvision.utils import save_image, make_grid
 from Denoising import UNet
 from Diffusion import GaussianDiffusion
 
+# This file implements the generation pipeline for the DDPM model. Mainly intended to use the generate function as import.
 
-# --------------------------------------------------
-# Utilities
-# --------------------------------------------------
+generation_model = "outputs/checkpoints/flowers_ddpm_epoch30_20260613_1452.pt"
 
 def timestamp():
     return time.strftime("%d_%H%M_%S")
 
-
 def denormalize(x):
-    """
-    Convert [-1,1] -> [0,1]
-    """
+    # Convert [-1,1] -> [0,1]
     return ((x.clamp(-1, 1) + 1) / 2)
 
-
-# --------------------------------------------------
-# Checkpoint Loading
-# --------------------------------------------------
-
-def load_model(
-    checkpoint_path,
-    device,
+def load_model(checkpoint_path, device,
     image_channels=3,
     base_channels=64,
-    time_emb_dim=256,
-):
+    time_emb_dim=256,):
 
     model = UNet(
         image_channels=image_channels,
@@ -42,20 +30,13 @@ def load_model(
         time_emb_dim=time_emb_dim,
     ).to(device)
 
-    checkpoint = torch.load(
-        checkpoint_path,
-        map_location=device
-    )
+    checkpoint = torch.load(checkpoint_path, map_location=device)
 
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
     return model
 
-
-# --------------------------------------------------
-# Generation
-# --------------------------------------------------
 
 @torch.no_grad()
 def generate(
@@ -65,8 +46,8 @@ def generate(
     image_size=64,
     timesteps=1000,
     schedule="cosine",
-    output_root="outputs/samples",
-):
+    output_root="outputs/samples",):
+
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     # print(f"Device: {device}")
 
@@ -81,12 +62,11 @@ def generate(
         device=device
     )
 
-    #run_dir = Path(output_root) / timestamp()
+    
     checkpoint_name = Path(checkpoint_path).stem
     run_name = "_".join(checkpoint_name.split("_")[:3])
     run_dir = Path(output_root) / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
-
     print(f"Saving samples to:")
     print(run_dir)
 
@@ -109,12 +89,6 @@ def generate(
         batch_time = (time.perf_counter() - batch_start)
 
         generated.append(images.cpu())
-
-        # print(
-        #     f"Generated {current_batch} images "
-        #     f"in {batch_time:.2f}s"
-        # )
-
         remaining -= current_batch
 
     total_time = (time.perf_counter() - total_start)
@@ -126,14 +100,11 @@ def generate(
     for idx, image in enumerate(generated):
         save_image(image, run_dir / f"sample_{idx:04d}.png")
 
-    # Save grid
+    # Grid of all generated images for overwiev
     grid = make_grid(generated, nrow=int(num_images ** 0.5), normalize=False)
     save_image(grid, run_dir / "grid.png")
 
-    # --------------------------------------------------
-    # Timing report
-    # --------------------------------------------------
-
+    # Measure average generation time
     avg_image_time = (
         total_time / num_images
     )
@@ -149,16 +120,9 @@ def generate(
     return generated
 
 
-# --------------------------------------------------
-# Main
-# --------------------------------------------------
-
 def main():
 
-    checkpoint_path = (
-        "outputs/checkpoints/flowers_ddpm_epoch30_20260613_1452.pt"
-    )
-
+    checkpoint_path = (generation_model)
     generate(
         checkpoint_path=checkpoint_path,
         num_images=16,

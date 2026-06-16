@@ -1,15 +1,15 @@
 from pathlib import Path
 
-from DDPM_generate import generate
+from latent_DDPM_generate import generate
 
-# Generation of images for all DDPM checkpoints
+# Generation of images for all Latent DDPM checkpoints
 
 CHECKPOINT_DIR = Path("outputs/checkpoints")
 
 
 def find_checkpoint(epoch: int):
 
-    pattern = f"flowers_ddpm_epoch{epoch}_*.pt"
+    pattern = f"latent_ddpm_epoch{epoch}_*.pt"
 
     matches = sorted(
         CHECKPOINT_DIR.glob(pattern)
@@ -31,9 +31,11 @@ def find_checkpoint(epoch: int):
 
 def generate_from_epochs(
     epochs,
+    autoencoder_checkpoint,
     num_images=16,
     batch_size=8,
-    image_size=64,
+    latent_size=8,
+    latent_channels=4,
     timesteps=1000,
 ):
 
@@ -47,23 +49,43 @@ def generate_from_epochs(
         print("=" * 60)
 
         generate(
-            checkpoint_path=str(checkpoint),
+            diffusion_checkpoint=str(checkpoint),
+            autoencoder_checkpoint=autoencoder_checkpoint,
             num_images=num_images,
             batch_size=batch_size,
-            image_size=image_size,
+            latent_size=latent_size,
+            latent_channels=latent_channels,
             timesteps=timesteps,
         )
 
 
 def main():
 
-    epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    autoencoder_checkpoint = (
+        "outputs/checkpoints/"
+        "flowers_autoencoder_epoch50_20260614_171314.pt"
+    )
+
+    epochs = [
+        20,
+        40,
+        60,
+        80,
+        100,
+        120,
+        140,
+        160,
+        180,
+        200,
+    ]
 
     generate_from_epochs(
         epochs=epochs,
+        autoencoder_checkpoint=autoencoder_checkpoint,
         num_images=16,
         batch_size=8,
-        image_size=64,
+        latent_size=8,
+        latent_channels=4,
         timesteps=1000,
     )
 

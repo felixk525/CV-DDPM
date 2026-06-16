@@ -56,6 +56,18 @@ def train_latent_ddpm(
 
     global_step = 0
 
+    
+    latents_all = []
+    print("Preparing latent norms")
+    with torch.no_grad():
+        for images in dataloader:
+            z = autoencoder.encode(images.to(device))
+            latents_all.append(z.cpu())
+
+    latents_all = torch.cat(latents_all, dim=0)
+
+    mean = latents_all.mean()
+    std = latents_all.std()
     pbar = tqdm(total=total_steps, desc="Training", leave=True)
 
     for epoch in range(epochs):
@@ -71,6 +83,14 @@ def train_latent_ddpm(
             # --------------------------------------------------
             with torch.no_grad():
                 latents = autoencoder.encode(images)
+                latents = (latents - mean) / (std + 1e-8)
+
+            # print(
+            #     latents.mean().item(),
+            #     latents.std().item(),
+            #     latents.min().item(),
+            #     latents.max().item()
+            # )
 
             # --------------------------------------------------
             # 2. sample timestep
@@ -112,8 +132,7 @@ def train_latent_ddpm(
 
         avg_loss = epoch_loss / len(dataloader)
 
-        print(f"\nEpoch {epoch+1} | loss {avg_loss:.6f}")
-
+        pbar.write(f"Epoch {epoch+1} | loss {avg_loss:.6f}")
         # --------------------------------------------------
         # save checkpoint
         # --------------------------------------------------
@@ -135,6 +154,13 @@ def train_latent_ddpm(
             )
 
             print(f"Saved: {ckpt_path}")
+    torch.save(
+    {
+        "mean": mean,
+        "std": std
+    },
+    "outputs/checkpoints/latent_stats.pt"
+)
 
     pbar.close()
 

@@ -2,7 +2,10 @@ import math
 import torch
 import torch.nn as nn
 
+# This file contains most parts needed for the Denoising process - namely the UNet and its components.
+# Part of the Denoising process are implemented in the GaussianDiffusion class from the Diffusion file.
 
+# Converts scalar t into a meaningfull vector - easier for the model to process.
 class SinusoidalTimeEmbedding(nn.Module):
     def __init__(self, dim: int):
         super().__init__()
@@ -10,33 +13,25 @@ class SinusoidalTimeEmbedding(nn.Module):
 
     def forward(self, time):
         device = time.device
-
         half_dim = self.dim // 2
 
         embeddings = math.log(10000) / (half_dim - 1)
-
-        embeddings = torch.exp(
-            torch.arange(half_dim, device=device) * -embeddings
-        )
-
+        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
-
-        embeddings = torch.cat(
-            (embeddings.sin(), embeddings.cos()),
-            dim=-1
-        )
+        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
 
         return embeddings
 
+# Take image features with awareness of noiselevel
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, time_emb_dim):
         super().__init__()
-
+        # Make time embeddings compatible for use with the image representation
         self.time_mlp = nn.Linear(time_emb_dim, out_channels)
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-
+        # Nonlinearity
         self.act = nn.SiLU()
 
         self.residual = (
@@ -56,9 +51,9 @@ class ConvBlock(nn.Module):
 
         return h + self.residual(x)
 
+# Resolution reduction, channel / feature information increase
 class DownBlock(nn.Module):
     def __init__(self, in_channels, out_channels, time_emb_dim):
-
         super().__init__()
         self.block = ConvBlock(in_channels, out_channels, time_emb_dim)
         self.downsample = nn.Conv2d(out_channels, out_channels, kernel_size=4, stride=2, padding=1)
@@ -69,9 +64,9 @@ class DownBlock(nn.Module):
         x = self.downsample(x)
         return x, skip
 
+# Resolution increase, channel / feature information decrease. Concatination with skip information.
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels, time_emb_dim):
-
         super().__init__()
         self.upsample = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)
         self.block = ConvBlock(out_channels * 2, out_channels, time_emb_dim)
@@ -81,7 +76,8 @@ class UpBlock(nn.Module):
         x = torch.cat([x, skip], dim=1)
         x = self.block(x, t)
         return x
-    
+
+# Combine the various features for the full structure
 class UNet(nn.Module):
     def __init__(self, image_channels=3, base_channels=64, time_emb_dim=256):
         # For latent call with image_channels = latent_channels

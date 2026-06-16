@@ -4,16 +4,17 @@
 # Add Generation pipeline (done)
 # Add Frechet Inception Distance & Inception Score & Average inference time for batch generation (done)
 # (add multi checkpoint generation) (done)
+# latent space diffusion (Autoencoder (done), generate (done), train (done), Denoising (done), Diffusion (done))
 
 # Optional: Improve training with EMA and diversity checks (samples every epoch)
 
-# latent space diffusion (Autoencoder (done), generate, train (done), Denoising (done), Diffusion (done))
 # Check speedup, visual quality and metrics for the accelerated version
 # Ablation study for varying sampling steps T = 1000 vs 100 or 10
 
 import os
 import time
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
@@ -21,10 +22,10 @@ from Denoising import UNet
 from Diffusion import GaussianDiffusion
 from Dataloader import get_dataloader
 
+# Training pipeline for DDPM.
 
 def get_timestamp():
-    return time.strftime("%Y%m%d_%H%M")
-
+    return time.strftime("%d_%H%M")
 
 def train(model, diffusion, dataloader, device,
     epochs=1,
@@ -37,7 +38,6 @@ def train(model, diffusion, dataloader, device,
     def save_checkpoint(epoch):
 
         timestamp = time.strftime("%Y%m%d_%H%M")
-
         path = os.path.join(save_dir, f"{run_name}_epoch{epoch+1}_{timestamp}.pt")
 
         torch.save({
@@ -53,22 +53,17 @@ def train(model, diffusion, dataloader, device,
     model.train()
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
-
     os.makedirs(save_dir, exist_ok=True)
-
     losses = []
-
     pbar = tqdm(total=epochs * len(dataloader))
 
     for epoch in range(epochs):
-
         for step, x0 in enumerate(dataloader):
 
             x0 = x0.to(device)
             t = diffusion.sample_timesteps(x0.shape[0]).to(device)
 
             noise = torch.randn_like(x0)
-
             x_t, noise = diffusion.q_sample(x0, t, noise)
             pred_noise = model(x_t, t)
 
@@ -84,28 +79,20 @@ def train(model, diffusion, dataloader, device,
 
             if step % log_every == 0:
                 losses.append(loss.item())
-                
-
-        # ─────────────────────────────
-        # SAVE CHECKPOINT (per epoch)
-        # ─────────────────────────────
         if (epoch + 1) % save_every_epochs == 0:
             save_checkpoint(epoch)
-
-    # final save ALWAYS
+    # final save
     save_checkpoint(epochs-1)
 
     return losses
 
-import os
-import numpy as np
-import torch
 
 def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
     model = UNet()
+    save_dir = "outputs/checkpoints"
+    run_name = "flowers_ddpm"
 
     diffusion = GaussianDiffusion(
         timesteps=1000,
@@ -119,9 +106,6 @@ def main():
         batch_size=8,
         num_workers=0
     )
-
-    save_dir = "outputs/checkpoints"
-    run_name = "flowers_ddpm"
 
     losses = train(
         model=model,
@@ -141,18 +125,16 @@ def main():
     loss_path_npy = os.path.join(save_dir, f"{run_name}_losses_{timestamp}.npy")
     loss_path_txt = os.path.join(save_dir, f"{run_name}_losses_{timestamp}.txt")
 
-    # binary (best for later plotting)
+    # binary (for later plotting)
     np.save(loss_path_npy, np.array(losses))
 
-    # human-readable backup
+    # readable backup
     with open(loss_path_txt, "w") as f:
         for l in losses:
             f.write(f"{l}\n")
-
     print(f"\n✓ Losses saved to:")
     print(f"  - {loss_path_npy}")
     print(f"  - {loss_path_txt}")
-
 
 if __name__ == "__main__":
     main()

@@ -4,14 +4,15 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
 
+# This file prepares the dataloader - assuming the dataset is all in the same folder as jpg files
 
 class FlowersDataset(Dataset):
     def __init__(self, root: str | Path, image_size: int = 64):
-        self.paths = sorted(Path(root).glob("*.jpg"))
+        self.paths = sorted(Path(root).glob("*.jpg")) # Collect all jpg's in the given folder
         if len(self.paths) == 0:
             raise FileNotFoundError(f"No .jpg files found in {root}")
 
-        self.transform = T.Compose([
+        self.transform = T.Compose([ # Transforms for diversity and generalization purposes
             T.Resize(image_size),
             T.RandomCrop(image_size),
             T.RandomHorizontalFlip(),
@@ -33,7 +34,7 @@ def get_dataloader(
     image_size: int = 64,
     batch_size: int = 64,
     num_workers: int = 4,
-) -> DataLoader:
+    ) -> DataLoader:
     dataset = FlowersDataset(root, image_size)
     print(f"Dataset: {len(dataset)} images at {image_size}×{image_size}")
     return DataLoader(

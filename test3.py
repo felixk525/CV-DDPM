@@ -5,6 +5,7 @@ from pathlib import Path
 from Autoencoder import Autoencoder
 from Dataloader import get_dataloader
 
+# Generation test of Autoencoder Quality
 
 # --------------------------------------------------
 # helper: tensor -> numpy image

@@ -1,12 +1,10 @@
-"""
-Download Oxford 102 Flowers dataset.
-All images are placed flat in datasets/flowers/ (no subfolders, no labels).
-"""
- 
 import os
 import tarfile
 import urllib.request
 from pathlib import Path
+
+# This file is used to download the Oxford 102 Flowers dataset.
+# The images are placed flat (no subfolders, no labels) in the dataset/flower folder.
  
 IMAGES_URL = "https://www.robots.ox.ac.uk/~vgg/data/flowers/102/102flowers.tgz"
 DEST_DIR = Path("datasets/flowers")
