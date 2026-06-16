@@ -18,5 +18,5 @@ DDPM_generate   - small generation example with a training checkpoint
 Autoencoder     - Autoencoder functionality
 Autoencoder_train       - Training of the Autoencoder
 
-latent_DDPM_generate    -
-latent_DDPM_train       -
+latent_DDPM_generate    - Generates latents
+latent_DDPM_train       - Trains the latent DDPM
