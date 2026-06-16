@@ -41,10 +41,9 @@ def train(model, diffusion, dataloader, device,
         path = os.path.join(save_dir, f"{run_name}_epoch{epoch+1}_{timestamp}.pt")
 
         torch.save({
-            "epoch": epoch,
+            "epoch": epoch + 1,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
-            "losses": losses,
             "timestamp": timestamp
         }, path)
         print(f"\n✓ checkpoint saved → {path}")
