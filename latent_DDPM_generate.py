@@ -5,7 +5,7 @@ from torchvision.utils import save_image, make_grid
 from Denoising import UNet
 from Diffusion import GaussianDiffusion
 from Autoencoder import Autoencoder
-
+from Autoencoder2 import Autoencoder2
 # This file is used to generate images via latent DDPM. Mainly intented to be used as export for the generate function
 
 def timestamp():
@@ -38,7 +38,7 @@ def load_diffusion_model(checkpoint_path, device, latent_channels=4, base_channe
 # Load Autoencoder
 def load_autoencoder(checkpoint_path, device, latent_channels=4, base_channels=64):
 
-    autoencoder = Autoencoder(
+    autoencoder = Autoencoder2(
         in_channels=3,
         latent_channels=latent_channels,
         base_channels=base_channels,
@@ -53,7 +53,7 @@ def load_autoencoder(checkpoint_path, device, latent_channels=4, base_channels=6
 # Generation
 @torch.no_grad()
 def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_size=8,
-    latent_size=8, latent_channels=4, timesteps=1000, schedule="cosine", output_root="outputs/samples"):
+    latent_size=8, latent_channels=4, timesteps=1000, schedule="linear", output_root="outputs/samples"):
 
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
@@ -151,7 +151,7 @@ def main():
 
     autoencoder_checkpoint = (
         "outputs/checkpoints/"
-        "flowers_autoencoder_latest.pt"
+        "fl_autoencoder2_epoch100_20260624_000920.pt"
     )
 
     generate(
@@ -159,9 +159,10 @@ def main():
         autoencoder_checkpoint=autoencoder_checkpoint,
         num_images=16,
         batch_size=8,
-        latent_size=8,
+        latent_size=16,
         latent_channels=4,
         timesteps=1000,
+        schedule = "linear"
     )
 
 

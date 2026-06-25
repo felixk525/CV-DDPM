@@ -33,6 +33,15 @@ class ConvBlock(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         # Nonlinearity
         self.act = nn.SiLU()
+        self.norm1 = nn.GroupNorm(
+            num_groups=8,
+            num_channels=out_channels
+        )
+
+        self.norm2 = nn.GroupNorm(
+            num_groups=8,
+            num_channels=out_channels
+        )
 
         self.residual = (
             nn.Conv2d(in_channels, out_channels, 1)
@@ -41,13 +50,18 @@ class ConvBlock(nn.Module):
         )
 
     def forward(self, x, t):
-        h = self.act(self.conv1(x))
+        h = self.conv1(x)
+        h = self.norm1(h)
+        h = self.act(h)
 
         time_emb = self.act(self.time_mlp(t))
-        time_emb = time_emb[:, :, None, None] # [B, out_channels, 1, 1]
+        time_emb = time_emb[:, :, None, None]
 
         h = h + time_emb
-        h = self.act(self.conv2(h)) # Time Embedding concat and processing
+
+        h = self.conv2(h)
+        h = self.norm2(h)
+        h = self.act(h)
 
         return h + self.residual(x)
 

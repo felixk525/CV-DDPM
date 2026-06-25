@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from Autoencoder import Autoencoder
+from Autoencoder2 import Autoencoder2
 from Dataloader import get_dataloader
 
 # Generation test of Autoencoder Quality
@@ -68,7 +69,7 @@ def main():
 
     # Run test for both untrained version (baseline) and trained version
     print("\nTesting untrained autoencoder...")
-    model_untrained = Autoencoder().to(device)
+    model_untrained = Autoencoder2(latent_channels=16).to(device)
 
     run_test(
         model_untrained,
@@ -79,9 +80,9 @@ def main():
     )
 
     print("\nLoading trained autoencoder...")
-    model_trained = Autoencoder().to(device)
+    model_trained = Autoencoder2(latent_channels=16).to(device)
 
-    checkpoint_path = "outputs/checkpoints/flowers_autoencoder_epoch50_20260616_220930.pt"
+    checkpoint_path = "outputs/checkpoints/fl_autoencoder2_epoch100_20260624_000920.pt"#"outputs/checkpoints/flowers_autoencoder_whole_16channels_nownorm_L1_epoch200_20260618_113626(1).pt"
     checkpoint = torch.load(checkpoint_path, map_location=device)
     model_trained.load_state_dict(checkpoint["model_state_dict"])
 

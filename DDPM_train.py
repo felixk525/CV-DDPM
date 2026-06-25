@@ -70,6 +70,7 @@ def train(model, diffusion, dataloader, device,
 
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             pbar.update(1)
@@ -91,11 +92,11 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet()
     save_dir = "outputs/checkpoints"
-    run_name = "flowers_ddpm"
+    run_name = "1000_ddpm"
 
     diffusion = GaussianDiffusion(
         timesteps=1000,
-        schedule="cosine",
+        schedule="linear",
         device=device
     )
 
@@ -112,7 +113,7 @@ def main():
         dataloader=dataloader,
         device=device,
         epochs=200,
-        log_every=100,
+        log_every=200,
         run_name=run_name,
         save_dir=save_dir,
         save_every_epochs=20

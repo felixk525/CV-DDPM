@@ -8,7 +8,7 @@ CHECKPOINT_DIR = Path("outputs/checkpoints")
 
 def find_checkpoint(epoch: int):
 
-    pattern = f"flowers_ddpm_epoch{epoch}_*.pt"
+    pattern = f"1000_ddpm_epoch{epoch}_*.pt" # The naming pattern to look for and use
     matches = sorted(
         CHECKPOINT_DIR.glob(pattern)
     )
@@ -22,7 +22,7 @@ def find_checkpoint(epoch: int):
     return matches[-1]
 
 
-def generate_from_epochs(epochs, num_images=16, batch_size=8, image_size=64, timesteps=1000,):
+def generate_from_epochs(epochs, num_images=16, batch_size=8, image_size=64, timesteps=1000, schedule="cosine",):
 
     for epoch in epochs:
 
@@ -39,11 +39,13 @@ def generate_from_epochs(epochs, num_images=16, batch_size=8, image_size=64, tim
             batch_size=batch_size,
             image_size=image_size,
             timesteps=timesteps,
+            schedule= schedule,
         )
 
 
 def main():
 
+    #epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
     epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 
     generate_from_epochs(
@@ -52,8 +54,9 @@ def main():
         batch_size=8,
         image_size=64,
         timesteps=1000,
+        schedule="linear"
     )
-
+# average generation time 2.1 seconds per image (for 100 - 0.21 for 10 - 0.021)
 
 if __name__ == "__main__":
     main()

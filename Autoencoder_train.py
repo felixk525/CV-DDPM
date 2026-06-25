@@ -7,6 +7,7 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from Autoencoder import Autoencoder
+from Autoencoder2 import Autoencoder2
 from Dataloader import get_dataloader
 
 
@@ -71,9 +72,10 @@ def main():
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    model = Autoencoder(
+    model = Autoencoder2(
         in_channels=3,
-        latent_channels=4,
+        #latent_channels=4,
+        latent_channels=16,
         base_channels=64
     ).to(device)
 
@@ -88,9 +90,9 @@ def main():
         model=model,
         dataloader=dataloader,
         device=device,
-        epochs=50,
+        epochs=100,
         save_every=20,
-        run_name="flowers_autoencoder"
+        run_name="fl_autoencoder2"
     )
 
     torch.save(losses, "training/autoencoder_losses.pt")

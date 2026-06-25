@@ -16,9 +16,11 @@ class GaussianDiffusion:
         alphas = 1.0 - betas                                      # (T,)
         alphas_cumprod = torch.cumprod(alphas, dim=0)             # (T,)
         alphas_cumprod_prev = torch.cat([torch.tensor([1.0]), alphas_cumprod[:-1]])
+        posterior_variance = (betas * (1 - alphas_cumprod_prev) / (1 - alphas_cumprod))
 
         # Pre-compute everything the training loop needs. Alpha is the amount of the original image that is remaining.
         # Beta is 1 - alpha. The cummulative product can be used to do the noise addition in one step
+        self.register(posterior_variance, "posterior_variance")
         self.register(betas, "betas")
         self.register(alphas, "alphas")
         self.register(alphas_cumprod, "alphas_cumprod")
@@ -26,6 +28,18 @@ class GaussianDiffusion:
         self.register(torch.sqrt(alphas_cumprod), "sqrt_alphas_cumprod")
         self.register(torch.sqrt(1.0 - alphas_cumprod), "sqrt_one_minus_alphas_cumprod")
         self.register(torch.sqrt(1.0 / alphas), "sqrt_recip_alphas")
+        #print(self.posterior_variance.min())
+        #print(self.posterior_variance.max())
+        # print(self.betas.max())
+        # print(self.alphas.min())
+        # print(self.alphas_cumprod[-1])
+        # print(self.posterior_variance.min())
+        # print(self.posterior_variance.max())
+        # print(
+        #     self.sqrt_recip_alphas.max(),
+        #     self.sqrt_recip_alphas.min()
+        # )
+        #print(betas.min(), betas.max(), posterior_variance.min(), posterior_variance.max())
 
     # Noise schedule
     def _make_schedule(self, T: int, schedule: str) -> torch.Tensor:
@@ -78,9 +92,27 @@ class GaussianDiffusion:
         # last step without noise addition deterministic
         if (t == 0).all():
             return model_mean
+        
+        current_t = t[0].item()
 
+        # if t[0].item() == 900:
+        #     print(
+        #         predicted_noise.mean().item(),
+        #         predicted_noise.std().item()
+        #     )
+
+        # if current_t % 100 == 0:
+        #     print(
+        #         f"t={current_t}",
+        #         f"x_std={x.std().item():.4f}",
+        #         f"pred_std={predicted_noise.std().item():.4f}",
+        #         f"pred_max={predicted_noise.abs().max().item():.4f}"
+        #     )
+                
         noise = torch.randn_like(x) # Noise addition to make generation flexible
-        return model_mean + torch.sqrt(betas_t) * noise
+        variance_t = self.posterior_variance[t][:,None,None,None]
+        return model_mean + torch.sqrt(variance_t) * noise
+        #return model_mean + torch.sqrt(betas_t) * noise
     
     # Sample image from noise - the full pipeline
     @torch.no_grad()
@@ -93,5 +125,18 @@ class GaussianDiffusion:
         for timestep in reversed(range(self.timesteps)):
             t = torch.full((batch_size,), timestep, device=self.device, dtype=torch.long) # Timestep for Batch B
             x = self.p_sample(model, x, t)
+            # if timestep % 100 == 0:
+            #     print(
+            #         f"t={timestep}",
+            #         "x_mean=", x.mean().item(),
+            #         "x_std=", x.std().item(),
+            #     )
+        # print(
+        #     "FINAL:",
+        #     x.mean().item(),
+        #     x.std().item(),
+        #     x.min().item(),
+        #     x.max().item()
+        # )
 
         return x

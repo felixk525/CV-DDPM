@@ -8,10 +8,11 @@ from Dataloader import get_dataloader
 from Denoising import UNet
 from Diffusion import GaussianDiffusion
 from Autoencoder import Autoencoder
+from Autoencoder2 import Autoencoder2
 
 # This file is used to train the latent DDPM with a given autoencoder version.
 
-autoencoder_checkpoint = "outputs/checkpoints/flowers_autoencoder_epoch50_20260614_171314.pt"
+autoencoder_checkpoint = "outputs/checkpoints/fl_autoencoder2_epoch100_20260624_000920.pt"
 
 def freeze_autoencoder(autoencoder):
     autoencoder.eval()
@@ -72,6 +73,7 @@ def train_latent_ddpm(model, diffusion, autoencoder, dataloader, device,
 
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             epoch_loss += loss.item()
@@ -113,9 +115,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    autoencoder = Autoencoder(
+    autoencoder = Autoencoder2(
         in_channels=3,
-        latent_channels=4,
+        latent_channels=16,#4,
         base_channels=64
     ).to(device)
 
@@ -126,13 +128,13 @@ def main():
     # diffusion model (UNet must match latent channels)
 
     model = UNet(
-        image_channels=4,   # IMPORTANT: latent channels
+        image_channels=16, #4,   # IMPORTANT: latent channels
         base_channels=64
     ).to(device)
 
     diffusion = GaussianDiffusion(
         timesteps=1000,
-        schedule="cosine",
+        schedule="linear",
         device=device
     )
 
@@ -153,7 +155,7 @@ def main():
         lr=1e-4,
         log_every=100,
         save_every=20,
-        run_name="latent_ddpm"
+        run_name="latent_1000"
     )
 
     torch.save(losses, "training/latent_ddpm_losses.pt")
