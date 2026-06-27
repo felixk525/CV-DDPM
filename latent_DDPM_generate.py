@@ -96,6 +96,7 @@ def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_
     mean = stats["mean"].to(device) # Since we used normalization during training we have to de-normalize during gen.
     std = stats["std"].to(device)
 
+    pbar = None
     if not grid_b:
         pbar = tqdm(
             total=num_images,

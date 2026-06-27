@@ -40,13 +40,14 @@ def generate_from_epochs(epochs, num_images=16, batch_size=8, image_size=64, tim
             image_size=image_size,
             timesteps=timesteps,
             schedule= schedule,
+            output_root="outputs/samples/small"
         )
 
 
 def main():
 
     #epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
-    epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    epochs = [20, 200]
 
     generate_from_epochs(
         epochs=epochs,
@@ -54,7 +55,7 @@ def main():
         batch_size=8,
         image_size=64,
         timesteps=1000,
-        schedule="linear"
+        schedule="linear",
     )
 
 # 1000 = 2.24 - 2.506s s per image (new)

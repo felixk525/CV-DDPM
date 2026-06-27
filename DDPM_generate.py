@@ -76,7 +76,7 @@ def generate(
     total_start = time.perf_counter()
     remaining = num_images
 
-
+    pbar = None
     if not grid_b:
         pbar = tqdm(
             total=num_images,

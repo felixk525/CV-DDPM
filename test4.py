@@ -42,6 +42,7 @@ def generate_from_epochs(epochs, autoencoder_checkpoint,
             latent_size=latent_size,
             latent_channels=latent_channels,
             timesteps=timesteps,
+            output_root="outputs/samples/small"
         )
 
 
@@ -51,7 +52,8 @@ def main():
         "fl_autoencoder2_epoch100_20260624_000920.pt"
     )
 
-    epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    #epochs = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    epochs = [20, 200]
 
     generate_from_epochs(
         epochs=epochs,
