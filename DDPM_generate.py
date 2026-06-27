@@ -1,5 +1,6 @@
 import os
 import time
+from tqdm import tqdm
 from pathlib import Path
 
 import torch
@@ -10,7 +11,7 @@ from Diffusion import GaussianDiffusion
 
 # This file implements the generation pipeline for the DDPM model. Mainly intended to use the generate function as import.
 
-generation_model = "outputs/checkpoints/flowers_ddpm_epoch30_20260613_1452.pt"
+generation_model = "outputs/checkpoints/1000_ddpm_epoch200_20260624_1844.pt"
 
 def timestamp():
     return time.strftime("%d_%H%M_%S")
@@ -46,7 +47,8 @@ def generate(
     image_size=64,
     timesteps=1000,
     schedule="cosine",
-    output_root="outputs/samples",):
+    output_root="outputs/samples",
+    grid_b = True,):
 
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     # print(f"Device: {device}")
@@ -74,6 +76,14 @@ def generate(
     total_start = time.perf_counter()
     remaining = num_images
 
+
+    if not grid_b:
+        pbar = tqdm(
+            total=num_images,
+            desc="Generating",
+            unit="img"
+        )
+
     while remaining > 0:
 
         current_batch = min(batch_size, remaining)
@@ -86,10 +96,15 @@ def generate(
             channels=3
         )
 
-        batch_time = (time.perf_counter() - batch_start)
-
         generated.append(images.cpu())
+        batch_time = (time.perf_counter() - batch_start)
         remaining -= current_batch
+
+        if pbar is not None:
+            pbar.update(current_batch)
+
+    if pbar is not None:
+        pbar.close()
 
     total_time = (time.perf_counter() - total_start)
     generated = torch.cat(generated, dim=0)
@@ -101,8 +116,9 @@ def generate(
         save_image(image, run_dir / f"sample_{idx:04d}.png")
 
     # Grid of all generated images for overwiev
-    grid = make_grid(generated, nrow=int(num_images ** 0.5), normalize=False)
-    save_image(grid, run_dir / "grid.png")
+    if grid_b:
+        grid = make_grid(generated, nrow=int(num_images ** 0.5), normalize=False)
+        save_image(grid, run_dir / "grid.png")
 
     # Measure average generation time
     avg_image_time = (
@@ -125,12 +141,18 @@ def main():
     checkpoint_path = (generation_model)
     generate(
         checkpoint_path=checkpoint_path,
-        num_images=16,
-        batch_size=8,
+        num_images=4000,
+        batch_size=16,
         image_size=64,
         timesteps=1000,
+        schedule="linear",
+        grid_b=False,
     )
 
 
 if __name__ == "__main__":
     main()
+
+# 1000 = 2.24 - 2.506s s per image average
+# 100 timesteps - 0.237 s per image average
+# 10 timesteps  - 0.024 s per image average

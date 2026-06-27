@@ -8,7 +8,9 @@
 
 # Optional: Improve training with EMA and diversity checks (samples every epoch)
 
+# Generate 4000 images
 # Check speedup, visual quality and metrics for the accelerated version (~ 2 sec per image with DDPM and ~0.3 sec per image for latent)
+# Plot metrics
 # Ablation study for varying sampling steps T = 1000 vs 100 or 10
 
 import os
@@ -138,3 +140,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# about 5 hours of training

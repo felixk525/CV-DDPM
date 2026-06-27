@@ -59,12 +59,17 @@ def evaluate_metrics(real_dir, fake_dir, device="cuda"):
 def main():
 
     real_dir = "datasets/flowers"
-    fake_dirs = ["outputs/samples/flowers_ddpm_epoch20", "outputs/samples/flowers_ddpm_epoch180", "outputs/samples/latent_ddpm_epoch20", "outputs/samples/latent_ddpm_epoch180"]
+    fake_dirs = ["outputs/samples/1000_ddpm_epoch200",
+                "outputs/samples/100_ddpm_epoch200",
+                "outputs/samples/10_ddpm_epoch200",
+                "outputs/samples/latent_1000_epoch200",
+                "outputs/samples/latent_100_epoch200",
+                "outputs/samples/latent_10_epoch200",]
     for fake_dir in fake_dirs:
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        print("Evaluating...")
+        print(f"Evaluating {fake_dir}...")
 
         fid, is_mean, is_std = evaluate_metrics(real_dir=real_dir, fake_dir=fake_dir, device=device)
 
@@ -76,21 +81,12 @@ def main():
 if __name__ == "__main__":
     main()
 
+#Evaluating outputs/samples/1000_ddpm_epoch200...
 # --- Results ---
-# FID: 423.27
-# Inception Score: 1.31 ± 0.24
-# Evaluating...
+# FID: 41.20
+# Inception Score: 3.02 ± 0.08
 
+# Evaluating outputs/samples/latent_1000_epoch200...
 # --- Results ---
-# FID: 235.21
-# Inception Score: 1.54 ± 0.24
-# Evaluating...
-
-# --- Results ---
-# FID: 385.30
-# Inception Score: 1.45 ± 0.28
-# Evaluating...
-
-# --- Results ---
-# FID: 266.05
-# Inception Score: 1.46 ± 0.30
+# FID: 75.51
+# Inception Score: 3.11 ± 0.13

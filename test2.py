@@ -56,7 +56,9 @@ def main():
         timesteps=1000,
         schedule="linear"
     )
-# average generation time 2.1 seconds per image (for 100 - 0.21 for 10 - 0.021)
+
+# 1000 = 2.24 - 2.506s s per image (new)
+# average generation time 2.24 seconds per image (for 100 - 0.21 for 10 - 0.021)
 
 if __name__ == "__main__":
     main()

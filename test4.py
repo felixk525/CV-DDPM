@@ -58,11 +58,12 @@ def main():
         autoencoder_checkpoint=autoencoder_checkpoint,
         num_images=16,
         batch_size=8,
-        latent_size=8,
+        latent_size=16,#8,
         latent_channels=16,#4,
         timesteps=1000,
     )
 
+# 1000 = 0.402 s per image (new)
 # 100 = 0.03 s per image
 # 10 = 0.004 s per image
 

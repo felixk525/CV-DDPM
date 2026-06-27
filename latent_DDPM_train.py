@@ -133,7 +133,7 @@ def main():
     ).to(device)
 
     diffusion = GaussianDiffusion(
-        timesteps=1000,
+        timesteps=10,
         schedule="linear",
         device=device
     )
@@ -155,7 +155,7 @@ def main():
         lr=1e-4,
         log_every=100,
         save_every=20,
-        run_name="latent_1000"
+        run_name="latent_10"
     )
 
     torch.save(losses, "training/latent_ddpm_losses.pt")

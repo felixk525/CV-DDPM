@@ -1,4 +1,5 @@
 import time
+from tqdm import tqdm
 from pathlib import Path
 import torch
 from torchvision.utils import save_image, make_grid
@@ -53,7 +54,7 @@ def load_autoencoder(checkpoint_path, device, latent_channels=4, base_channels=6
 # Generation
 @torch.no_grad()
 def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_size=8,
-    latent_size=8, latent_channels=4, timesteps=1000, schedule="linear", output_root="outputs/samples"):
+    latent_size=8, latent_channels=4, timesteps=1000, schedule="linear", output_root="outputs/samples", grid_b=True,):
 
     device = ("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
@@ -95,6 +96,13 @@ def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_
     mean = stats["mean"].to(device) # Since we used normalization during training we have to de-normalize during gen.
     std = stats["std"].to(device)
 
+    if not grid_b:
+        pbar = tqdm(
+            total=num_images,
+            desc="Generating",
+            unit="img"
+        )
+
     while remaining > 0:
 
         current_batch = min(batch_size, remaining)
@@ -111,10 +119,16 @@ def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_
         images = autoencoder.decode(latents)
 
         batch_time = (time.perf_counter() - batch_start)
-        print(f"Generated {current_batch} images in {batch_time:.2f}s")
+        #print(f"Generated {current_batch} images in {batch_time:.2f}s")
 
         generated_images.append(images.cpu())
         remaining -= current_batch
+
+        if pbar is not None:
+            pbar.update(current_batch)
+
+    if pbar is not None:
+        pbar.close()
 
     total_time = (time.perf_counter() - total_start)
 
@@ -125,13 +139,9 @@ def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_
     for idx, image in enumerate(generated_images):
         save_image(image, run_dir / f"sample_{idx:04d}.png")
 
-    grid = make_grid(
-        generated_images,
-        nrow=int(num_images ** 0.5),
-        normalize=False
-    )
-
-    save_image(grid, run_dir / "grid.png")
+    if grid_b:
+        grid = make_grid(generated_images, nrow=int(num_images ** 0.5), normalize=False)
+        save_image(grid, run_dir / "grid.png")
 
     # Measure generation time
     avg_time = (total_time / num_images)
@@ -145,8 +155,7 @@ def generate(diffusion_checkpoint, autoencoder_checkpoint, num_images=16, batch_
 def main():
 
     diffusion_checkpoint = (
-        "outputs/checkpoints/"
-        "latent_ddpm_epoch10_20260616_123456.pt"
+        "outputs/checkpoints/latent_1000_epoch200_20260624_192438.pt"
     )
 
     autoencoder_checkpoint = (
@@ -157,14 +166,19 @@ def main():
     generate(
         diffusion_checkpoint=diffusion_checkpoint,
         autoencoder_checkpoint=autoencoder_checkpoint,
-        num_images=16,
-        batch_size=8,
+        num_images=4000,
+        batch_size=16,
         latent_size=16,
-        latent_channels=4,
+        latent_channels=16,#4,
         timesteps=1000,
-        schedule = "linear"
+        schedule = "linear",
+        grid_b=False,
     )
 
 
 if __name__ == "__main__":
     main()
+
+# 1000 timesteps = 0.402 s per image
+# 100 timesteps = 0.029 s per image
+# 10 timesteps = 0.004 s per image
